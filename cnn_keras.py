@@ -13,12 +13,15 @@ ROOT/
 """
 
 import os, re, sys
+import tensorflow as tf
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Dropout
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Dropout, BatchNormalization, GlobalAveragePooling2D
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam
 
 # -----------------------------
 # 0) Paths & basic hyperparams
@@ -118,23 +121,56 @@ print(f"[Info] Test set:  X={test_images.shape}, Y={test_labels.shape}")
 #    - You can deepen it later
 # ---------------------------------------
 model = Sequential([
-    Conv2D(16, 3, padding='same', input_shape=(IMG_H, IMG_W, CHANNELS), use_bias=False),
-    MaxPooling2D(pool_size=2),
+    # Block 1: 32 filters
+    Conv2D(32, 3, padding='same', use_bias=False, input_shape=(IMG_H, IMG_W, 3)),
+    BatchNormalization(),
+    tf.keras.layers.ReLU(),
+    MaxPooling2D(2),
 
-    Conv2D(32, 3, padding='same', use_bias=False),
-    MaxPooling2D(pool_size=2),
+    # Block 2: 64 filters
+    Conv2D(64, 3, padding='same', use_bias=False),
+    BatchNormalization(),
+    tf.keras.layers.ReLU(),
+    MaxPooling2D(2),
 
-    Flatten(),
-    Dropout(0.25),
+    # Block 3: 128 filters
+    Conv2D(128, 3, padding='same', use_bias=False),
+    BatchNormalization(),
+    tf.keras.layers.ReLU(),
+    MaxPooling2D(2),
+
+    # Replace Flatten -> GAP (big param reduction)
+    GlobalAveragePooling2D(),
+
+    # More regularization (you can try 0.3–0.5)
+    Dropout(0.4),
+
+    # Small classifier head
     Dense(128, activation='relu'),
+    Dropout(0.2),
     Dense(num_classes, activation='softmax'),
+
+    # Conv2D(16, 3, padding='same', input_shape=(IMG_H, IMG_W, CHANNELS), use_bias=False, activation='relu'),
+    # BatchNormalization(),
+
+    # MaxPooling2D(pool_size=2),
+
+    # Conv2D(32, 3, padding='same', use_bias=False,activation='relu'),
+    # BatchNormalization(),
+    # MaxPooling2D(pool_size=2),
+
+    # Flatten(),
+    # Dropout(0.25),
+    # Dense(128, activation='relu'),
+    # Dense(num_classes, activation='softmax'),
 ])
 
 # ---------------------------------------
-# 4) Compile with SGD (same vibe as MNIST)
+# 4) Compile with SGD 
 # ---------------------------------------
 model.compile(
-    optimizer=SGD(learning_rate=0.005),   # same LR as your MNIST example
+    #optimizer=SGD(learning_rate=0.005),   
+    optimizer=Adam(learning_rate=1e-3),
     loss='categorical_crossentropy',      # because we used to_categorical
     metrics=['accuracy']
 )
@@ -151,6 +187,38 @@ history = model.fit(
     epochs=EPOCHS,
     validation_data=(test_images, test_labels),
 )
+
+
+
+# Extract training history
+acc     = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+loss    = history.history['loss']
+val_loss= history.history['val_loss']
+epochs  = range(1, len(acc) + 1)
+
+# ---- Plot Accuracy ----
+plt.figure(figsize=(8,5))
+plt.plot(epochs, acc, 'bo-', label='Training accuracy')
+plt.plot(epochs, val_acc, 'r^-', label='Validation accuracy')
+plt.title('Training vs Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# ---- Plot Loss ----
+plt.figure(figsize=(8,5))
+plt.plot(epochs, loss, 'bo-', label='Training loss')
+plt.plot(epochs, val_loss, 'r^-', label='Validation loss')
+plt.title('Training vs Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid(True)
+plt.show()
+
 
 # ---------------------------------------
 # 6) Save (new Keras format recommended)
