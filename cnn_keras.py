@@ -26,7 +26,7 @@ from tensorflow.keras.optimizers import Adam
 # -----------------------------
 # 0) Paths & basic hyperparams
 # -----------------------------
-ROOT = r"C:/Users/qdo26/From-Pixels-to-Patterns-A-Low-Level-Convolutional-Neural-Network-for-Wildlife-Detection/data"
+ROOT = r"C:/Users/Admin/machine_learning_CoW/From-Pixels-to-Patterns-A-Low-Level-Convolutional-Neural-Network-for-Wildlife-Detection/data"
 IMAGES_DIR = os.path.join(ROOT, "images")
 ANN_DIR = os.path.join(ROOT, "annotations")
 TRAINVAL_TXT = os.path.join(ANN_DIR, "trainval.txt")
@@ -170,7 +170,7 @@ model = Sequential([
 # ---------------------------------------
 model.compile(
     #optimizer=SGD(learning_rate=0.005),   
-    optimizer=Adam(learning_rate=1e-3),
+    optimizer=Adam(learning_rate=1e-2),
     loss='categorical_crossentropy',      # because we used to_categorical
     metrics=['accuracy']
 )

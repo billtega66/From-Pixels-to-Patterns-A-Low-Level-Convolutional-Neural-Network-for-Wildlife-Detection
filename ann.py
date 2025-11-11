@@ -21,6 +21,23 @@ class ANN:
         self.output = self.sigmoid(self.output_layer_input)
         return self.output
     
+    def gd_with_momentum(self, X, y, learning_rate, momentum, prev_weight_update_ih, prev_weight_update_ho):
+        output_error = y - self.output
+        output_delta = output_error * self.sigmoid_derivative(self.output)
+        hidden_error = np.dot(output_delta, self.weights_hidden_output.T)
+        hidden_delta = hidden_error * self.sigmoid_derivative(self.hidden_layer_output)
+
+        # Calculate weight updates with momentum
+        weight_update_ho = np.dot(self.hidden_layer_output.T, output_delta) * learning_rate + momentum * prev_weight_update_ho
+        weight_update_ih = np.dot(X.T, hidden_delta) * learning_rate + momentum * prev_weight_update_ih
+
+        # Update weights and biases
+        self.weights_hidden_output += weight_update_ho
+        self.bias_output += np.sum(output_delta, axis=0, keepdims=True) * learning_rate
+        self.weights_input_hidden += weight_update_ih
+        self.bias_hidden += np.sum(hidden_delta, axis=0, keepdims=True) * learning_rate
+
+        return weight_update_ih, weight_update_ho
     def back_propagation(self,X,y, learning_rate):
         output_error = y - self.output
         output_delta = output_error * self.sigmoid_derivative(self.output)
